@@ -1418,3 +1418,157 @@ button[onclick="restartGame()"]:hover {
         min-height: 8vh;
     }
 }
+/* 房间选择样式 */
+.create-room-section {
+    text-align: center;
+    margin: 3vh 0;
+    padding: 2vh;
+    background: rgba(139, 105, 20, 0.2);
+    border-radius: 1vh;
+    border: 0.2vh solid #8b6914;
+}
+
+.create-room-btn {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    border: none;
+    padding: 2vh 4vw;
+    border-radius: 0.5vh;
+    font-size: 1.3rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 50px;
+    margin-bottom: 1vh;
+}
+
+.create-room-btn:hover {
+    background: linear-gradient(135deg, #20c997, #17a2b8);
+    transform: translateY(-2px);
+}
+
+.create-room-section p {
+    color: #f4e4bc;
+    font-size: 1rem;
+    margin: 0;
+}
+
+.available-rooms {
+    margin: 3vh 0;
+}
+
+.available-rooms h3 {
+    color: #ffd700;
+    margin-bottom: 2vh;
+    font-size: 1.4rem;
+    text-align: center;
+}
+
+#rooms-list {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 1vh;
+    padding: 2vh;
+    min-height: 15vh;
+    border: 0.1vh solid #8b6914;
+}
+
+.no-rooms {
+    text-align: center;
+    color: #999;
+    font-style: italic;
+    padding: 3vh 0;
+}
+
+.room-item {
+    background: rgba(139, 105, 20, 0.3);
+    padding: 1.5vh 2vw;
+    margin-bottom: 1vh;
+    border-radius: 0.5vh;
+    border: 0.1vh solid #8b6914;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.room-info {
+    flex: 1;
+}
+
+.room-name {
+    color: #ffd700;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.room-players {
+    color: #f4e4bc;
+    font-size: 0.9rem;
+    margin-top: 0.5vh;
+}
+
+.join-room-btn {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border: none;
+    padding: 1vh 2vw;
+    border-radius: 0.3vh;
+    cursor: pointer;
+    min-height: 40px;
+    font-size: 1rem;
+}
+
+.join-room-btn:hover {
+    background: linear-gradient(135deg, #0056b3, #004085);
+}
+
+.refresh-btn {
+    display: block;
+    margin: 2vh auto 0;
+    background: rgba(139, 105, 20, 0.5);
+    color: #f4e4bc;
+    border: 0.1vh solid #8b6914;
+    padding: 1vh 2vw;
+    border-radius: 0.5vh;
+    cursor: pointer;
+    min-height: 44px;
+}
+
+.refresh-btn:hover {
+    background: rgba(139, 105, 20, 0.7);
+}
+
+#room-status {
+    background: rgba(40, 167, 69, 0.2);
+    padding: 2vh;
+    border-radius: 1vh;
+    border: 0.2vh solid #28a745;
+    margin-top: 2vh;
+    text-align: center;
+}
+
+#room-code-display {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #ffd700;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 1vh 2vw;
+    border-radius: 0.5vh;
+    margin-top: 1vh;
+    letter-spacing: 0.5rem;
+}
+
+/* 手机适配 */
+@media screen and (max-width: 768px) {
+    .room-options {
+        grid-template-columns: 1fr;
+        gap: 2vh;
+    }
+    
+    .room-option {
+        padding: 2vh 1vw;
+    }
+    
+    #room-code-display {
+        font-size: 1.5rem;
+        letter-spacing: 0.3rem;
+    }
+}
