@@ -21,10 +21,39 @@
         </header>
 
         <main id="game-main">
+            <!-- 房间选择界面 -->
+            <div id="room-selection" class="phase-container">
+                <h2>多人游戏</h2>
+                
+                <!-- 创建房间按钮 -->
+                <div class="create-room-section">
+                    <button onclick="createRoom()" class="create-room-btn">🏠 创建新房间</button>
+                    <p>创建房间后，朋友们就能看到并加入你的游戏</p>
+                </div>
+                
+                <!-- 可用房间列表 -->
+                <div class="available-rooms">
+                    <h3>可加入的房间</h3>
+                    <div id="rooms-list">
+                        <div class="no-rooms">暂无可用房间，创建一个新房间吧！</div>
+                    </div>
+                    <button onclick="refreshRooms()" class="refresh-btn">🔄 刷新房间列表</button>
+                </div>
+                
+                <!-- 房间状态 -->
+                <div id="room-status" style="display: none;">
+                    <h3 id="room-info"></h3>
+                    <div id="room-players-list"></div>
+                    <div id="host-controls" style="display: none;">
+                        <button onclick="startMultiplayerGame()" class="start-game-btn">开始游戏</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- 准备阶段界面 -->
-            <div id="preparation-phase" class="phase-container">
+            <div id="preparation-phase" class="phase-container" style="display: none;">
                 <h2>选择你的角色</h2>
-                <div id="character-selection">
+                <div id="character-selection"></div>
                     <div class="character-slot" id="character-1" onclick="selectCharacter(1)">
                         <div class="character-icon">🚶</div>
                         <div class="character-number">1</div>
