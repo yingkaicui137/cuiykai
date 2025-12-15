@@ -394,6 +394,53 @@ class MiningGame {
         }
     }
     
+    // 重置准备阶段状态
+    resetPreparationState() {
+        // 重置所有角色状态
+        for (let i = 1; i <= 4; i++) {
+            this.characterStates[i] = {
+                selected: false,
+                ready: false,
+                playerName: '',
+                playerId: null
+            };
+            
+            // 重置UI
+            const characterSlot = document.getElementById(`character-${i}`);
+            if (characterSlot) {
+                characterSlot.classList.remove('selected', 'ready');
+                characterSlot.onclick = function() { selectCharacter(i); };
+                
+                const statusDiv = characterSlot.querySelector('.character-status');
+                const inputDiv = characterSlot.querySelector('.character-input');
+                const input = inputDiv ? inputDiv.querySelector('input') : null;
+                
+                if (statusDiv) {
+                    statusDiv.style.display = 'block';
+                    statusDiv.textContent = '点击选择';
+                    statusDiv.style.color = '#f4e4bc';
+                }
+                
+                if (inputDiv) {
+                    inputDiv.style.display = 'none';
+                }
+                
+                if (input) {
+                    input.value = '';
+                }
+            }
+        }
+        
+        // 重置当前选择
+        this.currentPlayerSelection = null;
+        
+        // 隐藏开始按钮
+        const startContainer = document.getElementById('start-game-container');
+        if (startContainer) {
+            startContainer.style.display = 'none';
+        }
+    }
+    
     initializePreparation() {
         // 准备阶段不需要创建玩家，等待玩家选择
         this.generateMineCards();
@@ -2389,46 +2436,78 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 准备阶段函数
 function selectCharacter(characterId) {
-    if (!game) return;
-    
-    const characterState = game.characterStates[characterId];
-    
-    // 如果已经被选择或已准备，不能再选择
-    if (characterState.selected || characterState.ready) {
-        alert('这个角色已经被其他玩家选择了！');
-        return;
+    try {
+        if (!game) {
+            console.log('游戏未初始化');
+            return;
+        }
+        
+        const characterState = game.characterStates[characterId];
+        if (!characterState) {
+            console.log('角色状态不存在:', characterId);
+            return;
+        }
+        
+        // 如果已经被选择或已准备，不能再选择
+        if (characterState.selected || characterState.ready) {
+            alert('这个角色已经被其他玩家选择了！');
+            return;
+        }
+        
+        // 如果当前玩家已经选择了其他角色，不能再选择
+        if (game.currentPlayerSelection !== null && game.currentPlayerSelection !== characterId) {
+            alert('你已经选择了一个角色！如果要更换，请先取消当前选择。');
+            return;
+        }
+        
+        // 播放选择音效
+        if (game.soundManager && game.soundManager.play) {
+            game.soundManager.play('click');
+        }
+        
+        // 标记为已选择
+        characterState.selected = true;
+        game.currentPlayerSelection = characterId;
+        
+        // 更新UI
+        const characterSlot = document.getElementById(`character-${characterId}`);
+        if (!characterSlot) {
+            console.log('找不到角色槽:', characterId);
+            return;
+        }
+        
+        characterSlot.classList.add('selected');
+        
+        // 显示输入框和取消按钮
+        const statusDiv = characterSlot.querySelector('.character-status');
+        const inputDiv = characterSlot.querySelector('.character-input');
+        
+        if (statusDiv && inputDiv) {
+            statusDiv.style.display = 'none';
+            inputDiv.style.display = 'flex';
+            
+            // 聚焦到输入框（苹果手机兼容）
+            const input = inputDiv.querySelector('input');
+            if (input) {
+                setTimeout(() => {
+                    try {
+                        input.focus();
+                    } catch (e) {
+                        console.log('聚焦失败，这在某些手机上是正常的');
+                    }
+                }, 200);
+            }
+        }
+        
+        // 禁用其他角色的选择
+        if (game.updateCharacterSelectionUI) {
+            game.updateCharacterSelectionUI();
+        }
+        
+    } catch (error) {
+        console.error('选择角色时出错:', error);
+        alert('选择角色时出现问题，请刷新页面重试');
     }
-    
-    // 如果当前玩家已经选择了其他角色，不能再选择
-    if (game.currentPlayerSelection !== null) {
-        alert('你已经选择了一个角色！如果要更换，请先取消当前选择。');
-        return;
-    }
-    
-    // 播放选择音效
-    game.soundManager.play('click');
-    
-    // 标记为已选择
-    characterState.selected = true;
-    game.currentPlayerSelection = characterId;
-    
-    // 更新UI
-    const characterSlot = document.getElementById(`character-${characterId}`);
-    characterSlot.classList.add('selected');
-    
-    // 显示输入框和取消按钮
-    const statusDiv = characterSlot.querySelector('.character-status');
-    const inputDiv = characterSlot.querySelector('.character-input');
-    
-    statusDiv.style.display = 'none';
-    inputDiv.style.display = 'flex';
-    
-    // 聚焦到输入框
-    const input = inputDiv.querySelector('input');
-    setTimeout(() => input.focus(), 100);
-    
-    // 禁用其他角色的选择
-    game.updateCharacterSelectionUI();
 }
 
 function cancelCharacter(characterId) {
@@ -2441,17 +2520,25 @@ function cancelCharacter(characterId) {
     
     // 重置状态
     characterState.selected = false;
+    characterState.ready = false;
+    characterState.playerName = '';
     game.currentPlayerSelection = null;
     
     // 更新UI
     const characterSlot = document.getElementById(`character-${characterId}`);
-    characterSlot.classList.remove('selected');
+    characterSlot.classList.remove('selected', 'ready');
+    
+    // 重新启用点击事件
+    characterSlot.onclick = function() { selectCharacter(characterId); };
     
     const statusDiv = characterSlot.querySelector('.character-status');
     const inputDiv = characterSlot.querySelector('.character-input');
     const input = inputDiv.querySelector('input');
     
+    // 重置显示
     statusDiv.style.display = 'block';
+    statusDiv.textContent = '点击选择';
+    statusDiv.style.color = '#f4e4bc';
     inputDiv.style.display = 'none';
     input.value = '';
     
@@ -2623,5 +2710,15 @@ function makeDisplayChoice(playerId, action, pickaxe = null) {
 function restartGame() {
     if (game) {
         game.restart();
+    }
+}
+// 重置所有选择
+function resetAllSelections() {
+    if (!game) return;
+    
+    if (confirm('确定要重置所有角色选择吗？这将清除所有玩家的准备状态。')) {
+        game.soundManager.play('click');
+        game.resetPreparationState();
+        alert('所有选择已重置，可以重新选择角色了！');
     }
 }
