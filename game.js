@@ -376,6 +376,276 @@ class MiningGame {
         
         this.initializePreparation();
         this.setupMobileDetection();
+        
+        // 房间系统
+        this.isHost = false;
+        this.roomCode = null;
+        this.roomPlayers = [];
+        this.setupRoomSystem();
+    }
+    
+    // 设置房间系统
+    setupRoomSystem() {
+        // 使用localStorage作为简单的本地存储
+        this.roomStorage = {
+            setRoom: (code, data) => {
+                localStorage.setItem(`room_${code}`, JSON.stringify({
+                    ...data,
+                    lastUpdate: Date.now()
+                }));
+                // 同时更新房间列表
+                this.updateRoomsList();
+            },
+            getRoom: (code) => {
+                const data = localStorage.getItem(`room_${code}`);
+                if (!data) return null;
+                const room = JSON.parse(data);
+                // 检查房间是否过期（10分钟）
+                if (Date.now() - room.lastUpdate > 600000) {
+                    localStorage.removeItem(`room_${code}`);
+                    return null;
+                }
+                return room;
+            },
+            getAllRooms: () => {
+                const rooms = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('room_')) {
+                        const code = key.replace('room_', '');
+                        const room = this.roomStorage.getRoom(code);
+                        if (room) {
+                            rooms.push({ code, ...room });
+                        }
+                    }
+                }
+                return rooms;
+            },
+            updateRoom: (code, updates) => {
+                const room = this.roomStorage.getRoom(code);
+                if (room) {
+                    this.roomStorage.setRoom(code, { ...room, ...updates });
+                }
+            },
+            deleteRoom: (code) => {
+                localStorage.removeItem(`room_${code}`);
+                this.updateRoomsList();
+            }
+        };
+        
+        // 启动房间列表刷新
+        this.startRoomsListRefresh();
+    }
+    
+    // 生成房间号
+    generateRoomCode() {
+        return Math.random().toString(36).substr(2, 6).toUpperCase();
+    }
+    
+    // 创建房间
+    createRoom() {
+        this.isHost = true;
+        this.roomCode = this.generateRoomCode();
+        
+        // 确保房间号唯一
+        while (this.roomStorage.getRoom(this.roomCode)) {
+            this.roomCode = this.generateRoomCode();
+        }
+        
+        // 获取房主名字
+        const hostName = prompt('请输入你的名字（作为房主）：') || '房主';
+        
+        // 创建房间数据
+        const roomData = {
+            hostName: hostName,
+            roomName: `${hostName}的房间`,
+            players: [hostName],
+            gameState: 'waiting',
+            characterStates: {
+                1: { selected: false, ready: false, playerName: '', playerId: null },
+                2: { selected: false, ready: false, playerName: '', playerId: null },
+                3: { selected: false, ready: false, playerName: '', playerId: null },
+                4: { selected: false, ready: false, playerName: '', playerId: null }
+            }
+        };
+        
+        this.roomStorage.setRoom(this.roomCode, roomData);
+        this.showRoomStatus();
+        this.startRoomPolling();
+    }
+    
+    // 加入房间
+    joinRoom(code) {
+        const room = this.roomStorage.getRoom(code);
+        if (!room) {
+            alert('房间不存在或已过期！');
+            return;
+        }
+        
+        // 获取玩家名字
+        const playerName = prompt('请输入你的名字：') || '玩家';
+        
+        // 添加玩家到房间
+        room.players.push(playerName);
+        this.roomStorage.setRoom(code, room);
+        
+        this.isHost = false;
+        this.roomCode = code;
+        this.playerName = playerName;
+        this.showRoomStatus();
+        this.startRoomPolling();
+    }
+    
+    // 显示房间状态
+    showRoomStatus() {
+        const roomSelection = document.getElementById('room-selection');
+        const roomStatus = document.getElementById('room-status');
+        const roomInfo = document.getElementById('room-info');
+        const hostControls = document.getElementById('host-controls');
+        
+        // 隐藏房间选择，显示房间状态
+        roomSelection.style.display = 'none';
+        roomStatus.style.display = 'block';
+        
+        const room = this.roomStorage.getRoom(this.roomCode);
+        if (!room) return;
+        
+        if (this.isHost) {
+            roomInfo.textContent = `房间：${room.roomName} - 你是房主`;
+            hostControls.style.display = 'block';
+        } else {
+            roomInfo.textContent = `已加入：${room.roomName} - 等待房主开始游戏`;
+            hostControls.style.display = 'none';
+        }
+        
+        this.updateRoomPlayersList();
+    }
+    
+    // 更新房间玩家列表
+    updateRoomPlayersList() {
+        const room = this.roomStorage.getRoom(this.roomCode);
+        if (!room) return;
+        
+        const playersList = document.getElementById('room-players-list');
+        playersList.innerHTML = '<h4>房间内玩家：</h4>';
+        
+        room.players.forEach((player, index) => {
+            const playerDiv = document.createElement('div');
+            playerDiv.style.cssText = `
+                padding: 0.5vh 1vw;
+                margin: 0.5vh 0;
+                background: rgba(139, 105, 20, 0.3);
+                border-radius: 0.3vh;
+                color: #f4e4bc;
+            `;
+            playerDiv.textContent = `${index + 1}. ${player}${index === 0 ? ' (房主)' : ''}`;
+            playersList.appendChild(playerDiv);
+        });
+    }
+    
+    // 更新房间列表
+    updateRoomsList() {
+        const roomsList = document.getElementById('rooms-list');
+        const rooms = this.roomStorage.getAllRooms();
+        
+        if (rooms.length === 0) {
+            roomsList.innerHTML = '<div class="no-rooms">暂无可用房间，创建一个新房间吧！</div>';
+            return;
+        }
+        
+        roomsList.innerHTML = '';
+        rooms.forEach(room => {
+            const roomDiv = document.createElement('div');
+            roomDiv.className = 'room-item';
+            
+            roomDiv.innerHTML = `
+                <div class="room-info">
+                    <div class="room-name">${room.roomName}</div>
+                    <div class="room-players">${room.players.length} 人在房间</div>
+                </div>
+                <button class="join-room-btn" onclick="joinSpecificRoom('${room.code}')">
+                    加入房间
+                </button>
+            `;
+            
+            roomsList.appendChild(roomDiv);
+        });
+    }
+    
+    // 启动房间列表刷新
+    startRoomsListRefresh() {
+        // 立即更新一次
+        this.updateRoomsList();
+        
+        // 每3秒刷新一次房间列表
+        this.roomsListInterval = setInterval(() => {
+            if (document.getElementById('room-selection').style.display !== 'none') {
+                this.updateRoomsList();
+            }
+        }, 3000);
+    }
+    
+    // 开始多人游戏
+    startMultiplayerGame() {
+        if (!this.isHost) return;
+        
+        // 更新房间状态
+        this.roomStorage.updateRoom(this.roomCode, {
+            gameState: 'character_selection'
+        });
+        
+        // 切换到角色选择
+        document.getElementById('room-selection').style.display = 'none';
+        document.getElementById('preparation-phase').style.display = 'block';
+        
+        this.soundManager.play('cardReveal');
+    }
+    
+    // 房间轮询
+    startRoomPolling() {
+        this.roomPollingInterval = setInterval(() => {
+            this.updateRoomState();
+        }, 1000); // 每秒检查一次
+    }
+    
+    // 更新房间状态
+    updateRoomState() {
+        if (!this.roomCode) return;
+        
+        const room = this.roomStorage.getRoom(this.roomCode);
+        if (!room) {
+            alert('房间已过期或被删除！');
+            this.leaveRoom();
+            return;
+        }
+        
+        // 同步角色状态
+        if (room.gameState === 'character_selection') {
+            // 如果不是房主且还在房间选择界面，切换到角色选择
+            if (!this.isHost && document.getElementById('room-selection').style.display !== 'none') {
+                document.getElementById('room-selection').style.display = 'none';
+                document.getElementById('preparation-phase').style.display = 'block';
+            }
+            
+            // 同步角色状态
+            this.characterStates = room.characterStates;
+            this.updateCharacterSelectionUI();
+        }
+    }
+    
+    // 离开房间
+    leaveRoom() {
+        if (this.roomPollingInterval) {
+            clearInterval(this.roomPollingInterval);
+        }
+        
+        this.isHost = false;
+        this.roomCode = null;
+        
+        // 返回房间选择界面
+        document.getElementById('room-status').style.display = 'none';
+        document.getElementById('preparation-phase').style.display = 'none';
+        document.getElementById('room-selection').style.display = 'block';
     }
     
     // 检测手机并显示提示
@@ -2566,6 +2836,13 @@ function confirmCharacter(characterId) {
     characterState.ready = true;
     characterState.playerName = playerName;
     
+    // 如果在多人房间中，同步到房间
+    if (game.roomCode) {
+        game.roomStorage.updateRoom(game.roomCode, {
+            characterStates: game.characterStates
+        });
+    }
+    
     // 清除当前玩家选择状态（因为已经确认了）
     game.currentPlayerSelection = null;
     
@@ -2720,5 +2997,29 @@ function resetAllSelections() {
         game.soundManager.play('click');
         game.resetPreparationState();
         alert('所有选择已重置，可以重新选择角色了！');
+    }
+}
+// 房间管理函数
+function createRoom() {
+    if (game) {
+        game.createRoom();
+    }
+}
+
+function joinSpecificRoom(roomCode) {
+    if (game) {
+        game.joinRoom(roomCode);
+    }
+}
+
+function refreshRooms() {
+    if (game) {
+        game.updateRoomsList();
+    }
+}
+
+function startMultiplayerGame() {
+    if (game && game.isHost) {
+        game.startMultiplayerGame();
     }
 }
