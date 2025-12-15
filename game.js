@@ -454,12 +454,13 @@ class MiningGame {
         
         // 获取房主名字
         const hostName = prompt('请输入你的名字（作为房主）：') || '房主';
+        this.playerName = hostName; // 保存玩家名字，后面选角色时使用
         
         // 创建房间数据
         const roomData = {
             hostName: hostName,
             roomName: `${hostName}的房间`,
-            players: [hostName],
+            players: [{ name: hostName, isHost: true }],
             gameState: 'waiting',
             characterStates: {
                 1: { selected: false, ready: false, playerName: '', playerId: null },
@@ -484,14 +485,14 @@ class MiningGame {
         
         // 获取玩家名字
         const playerName = prompt('请输入你的名字：') || '玩家';
+        this.playerName = playerName; // 保存玩家名字，后面选角色时使用
         
         // 添加玩家到房间
-        room.players.push(playerName);
+        room.players.push({ name: playerName, isHost: false });
         this.roomStorage.setRoom(code, room);
         
         this.isHost = false;
         this.roomCode = code;
-        this.playerName = playerName;
         this.showRoomStatus();
         this.startRoomPolling();
     }
@@ -527,18 +528,24 @@ class MiningGame {
         if (!room) return;
         
         const playersList = document.getElementById('room-players-list');
-        playersList.innerHTML = '<h4>房间内玩家：</h4>';
+        if (!playersList) return;
+        
+        playersList.innerHTML = '<h4 style="color: #ffd700; margin-bottom: 1vh;">房间内玩家：</h4>';
         
         room.players.forEach((player, index) => {
             const playerDiv = document.createElement('div');
             playerDiv.style.cssText = `
-                padding: 0.5vh 1vw;
+                padding: 1vh 1.5vw;
                 margin: 0.5vh 0;
                 background: rgba(139, 105, 20, 0.3);
-                border-radius: 0.3vh;
+                border-radius: 0.5vh;
                 color: #f4e4bc;
+                border: 1px solid #8b6914;
+                font-size: 1.1rem;
             `;
-            playerDiv.textContent = `${index + 1}. ${player}${index === 0 ? ' (房主)' : ''}`;
+            const playerName = typeof player === 'string' ? player : player.name;
+            const isHost = typeof player === 'string' ? index === 0 : player.isHost;
+            playerDiv.textContent = `${index + 1}. ${playerName}${isHost ? ' 👑 (房主)' : ''}`;
             playersList.appendChild(playerDiv);
         });
     }
@@ -546,6 +553,8 @@ class MiningGame {
     // 更新房间列表
     updateRoomsList() {
         const roomsList = document.getElementById('rooms-list');
+        if (!roomsList) return;
+        
         const rooms = this.roomStorage.getAllRooms();
         
         if (rooms.length === 0) {
@@ -558,10 +567,12 @@ class MiningGame {
             const roomDiv = document.createElement('div');
             roomDiv.className = 'room-item';
             
+            const playerCount = room.players ? room.players.length : 0;
+            
             roomDiv.innerHTML = `
                 <div class="room-info">
-                    <div class="room-name">${room.roomName}</div>
-                    <div class="room-players">${room.players.length} 人在房间</div>
+                    <div class="room-name">${room.roomName || '未命名房间'}</div>
+                    <div class="room-players">${playerCount} 人在房间</div>
                 </div>
                 <button class="join-room-btn" onclick="joinSpecificRoom('${room.code}')">
                     加入房间
@@ -2756,12 +2767,18 @@ function selectCharacter(characterId) {
             statusDiv.style.display = 'none';
             inputDiv.style.display = 'flex';
             
-            // 聚焦到输入框（苹果手机兼容）
+            // 聚焦到输入框并自动填入名字（苹果手机兼容）
             const input = inputDiv.querySelector('input');
             if (input) {
+                // 如果在房间中，自动填入之前输入的名字
+                if (game.playerName) {
+                    input.value = game.playerName;
+                }
+                
                 setTimeout(() => {
                     try {
                         input.focus();
+                        input.select(); // 选中文字，方便修改
                     } catch (e) {
                         console.log('聚焦失败，这在某些手机上是正常的');
                     }
@@ -3021,5 +3038,31 @@ function refreshRooms() {
 function startMultiplayerGame() {
     if (game && game.isHost) {
         game.startMultiplayerGame();
+    }
+}
+// 返回房间选择
+function backToRoomSelection() {
+    if (game && game.roomCode) {
+        // 如果是房主，删除房间
+        if (game.isHost) {
+            if (confirm('确定要解散房间吗？')) {
+                game.roomStorage.deleteRoom(game.roomCode);
+                game.leaveRoom();
+            }
+        } else {
+            // 如果是玩家，离开房间
+            if (confirm('确定要离开房间吗？')) {
+                const room = game.roomStorage.getRoom(game.roomCode);
+                if (room) {
+                    // 从玩家列表中移除自己
+                    room.players = room.players.filter(p => {
+                        const playerName = typeof p === 'string' ? p : p.name;
+                        return playerName !== game.playerName;
+                    });
+                    game.roomStorage.setRoom(game.roomCode, room);
+                }
+                game.leaveRoom();
+            }
+        }
     }
 }
