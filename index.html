@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>矿洞挖矿游戏</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <header>
+            <h1>矿洞挖矿游戏</h1>
+            <div id="game-info">
+                <span>回合: <span id="round-number">1</span>/3</span>
+                <span>阶段: <span id="phase">购买阶段</span></span>
+            </div>
+            <!-- 手机提示 -->
+            <div id="mobile-tip" style="display: none; font-size: 0.8rem; color: #ffd700; margin-top: 0.5vh;">
+                📱 建议横屏游玩获得更佳体验
+            </div>
+        </header>
+
+        <main id="game-main">
+            <!-- 准备阶段界面 -->
+            <div id="preparation-phase" class="phase-container">
+                <h2>选择你的角色</h2>
+                <div id="character-selection">
+                    <div class="character-slot" id="character-1" onclick="selectCharacter(1)">
+                        <div class="character-icon">🚶</div>
+                        <div class="character-number">1</div>
+                        <div class="character-status">点击选择</div>
+                        <div class="character-input" style="display: none;">
+                            <input type="text" placeholder="输入角色名字" maxlength="10">
+                            <div class="character-buttons">
+                                <button onclick="cancelCharacter(1)" class="cancel-btn">取消</button>
+                                <button onclick="confirmCharacter(1)" class="confirm-btn">准备</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="character-slot" id="character-2" onclick="selectCharacter(2)">
+                        <div class="character-icon">🚶</div>
+                        <div class="character-number">2</div>
+                        <div class="character-status">点击选择</div>
+                        <div class="character-input" style="display: none;">
+                            <input type="text" placeholder="输入角色名字" maxlength="10">
+                            <div class="character-buttons">
+                                <button onclick="cancelCharacter(2)" class="cancel-btn">取消</button>
+                                <button onclick="confirmCharacter(2)" class="confirm-btn">准备</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="character-slot" id="character-3" onclick="selectCharacter(3)">
+                        <div class="character-icon">🚶</div>
+                        <div class="character-number">3</div>
+                        <div class="character-status">点击选择</div>
+                        <div class="character-input" style="display: none;">
+                            <input type="text" placeholder="输入角色名字" maxlength="10">
+                            <div class="character-buttons">
+                                <button onclick="cancelCharacter(3)" class="cancel-btn">取消</button>
+                                <button onclick="confirmCharacter(3)" class="confirm-btn">准备</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="character-slot" id="character-4" onclick="selectCharacter(4)">
+                        <div class="character-icon">🚶</div>
+                        <div class="character-number">4</div>
+                        <div class="character-status">点击选择</div>
+                        <div class="character-input" style="display: none;">
+                            <input type="text" placeholder="输入角色名字" maxlength="10">
+                            <div class="character-buttons">
+                                <button onclick="cancelCharacter(4)" class="cancel-btn">取消</button>
+                                <button onclick="confirmCharacter(4)" class="confirm-btn">准备</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="start-game-container" style="display: none;">
+                    <button id="start-game-btn" onclick="startGameFromPreparation()">开始游戏</button>
+                </div>
+            </div>
+
+            <!-- 购买阶段界面 -->
+            <div id="shop-phase" class="phase-container" style="display: none;">
+                <!-- 简单商店界面 -->
+                <div id="shop-phase" class="phase-container">
+                    <!-- 玩家信息 -->
+                    <div id="human-player-info">
+                        <!-- 玩家信息将在这里显示 -->
+                    </div>
+                    
+                    <!-- 商店物品 -->
+                    <div id="shop-items">
+                        <div class="item-category">
+                            <h3>镐子</h3>
+                            <div class="items">
+                                <div class="shop-item">
+                                    <span>银镐 - 效率2倍</span>
+                                    <button onclick="buyItem('pickaxe', 'silver', 5)">购买 (5矿石)</button>
+                                </div>
+                                <div class="shop-item">
+                                    <span>金镐 - 效率3倍</span>
+                                    <button onclick="buyItem('pickaxe', 'gold', 10)">购买 (10矿石)</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 开始挖矿按钮 -->
+                    <button id="start-mining" onclick="startMining()">开始挖矿</button>
+                    
+                    <!-- AI状态提示 -->
+                    <div id="ai-status" style="display: none;">
+                        AI玩家正在购买装备...
+                    </div>
+                </div>
+            </div>
+
+            <!-- 矿洞展示阶段 -->
+            <div id="mine-display-phase" class="phase-container" style="display: none;">
+                <h2>矿洞地图</h2>
+                <div id="mine-display-content">
+                    <!-- 左侧选择区域 -->
+                    <div id="mine-display-choices">
+                        <h3>玩家选择</h3>
+                        <div id="display-player-choices">
+                            <!-- 玩家选择按钮将在这里生成 -->
+                        </div>
+                    </div>
+                    
+                    <!-- 右侧地图区域 -->
+                    <div id="mine-display-map">
+                        <div id="camp-area">
+                            <h3>营地</h3>
+                            <div id="camp-houses">
+                                <div class="player-house" id="house-1">
+                                    <div class="house-icon">🏠</div>
+                                    <div class="house-label">玩家1</div>
+                                    <div class="house-gems">💎 <span id="gems-1">10</span></div>
+                                    <div class="house-player" id="player-in-house-1"></div>
+                                </div>
+                                <div class="player-house" id="house-2">
+                                    <div class="house-icon">🏠</div>
+                                    <div class="house-label">玩家2(AI)</div>
+                                    <div class="house-gems">💎 <span id="gems-2">10</span></div>
+                                    <div class="house-player" id="player-in-house-2"></div>
+                                </div>
+                                <div class="player-house" id="house-3">
+                                    <div class="house-icon">🏠</div>
+                                    <div class="house-label">玩家3(AI)</div>
+                                    <div class="house-gems">💎 <span id="gems-3">10</span></div>
+                                    <div class="house-player" id="player-in-house-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="mine-path">
+                            <!-- 矿洞路径将在这里生成 -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 新的视觉化结算系统不需要额外的UI界面 -->
+            </div>
+
+            <!-- 挖矿阶段界面 -->
+            <div id="mining-phase" class="phase-container" style="display: none;">
+                <h2>矿洞挖矿</h2>
+                <div id="mine-info">
+                    <span>当前矿洞: <span id="current-mine">1</span>/20</span>
+                </div>
+                
+                <div id="current-card">
+                    <div id="card-display">
+                        <h3>矿洞牌</h3>
+                        <div id="card-content">点击翻开矿洞牌</div>
+                    </div>
+                </div>
+                
+                <div id="player-choices">
+                    <!-- 玩家选择将在这里动态生成 -->
+                </div>
+                
+                <div id="mining-results">
+                    <!-- 挖矿结果将在这里显示 -->
+                </div>
+            </div>
+
+            <!-- 结果阶段界面 -->
+            <div id="results-phase" class="phase-container" style="display: none;">
+                <h2>游戏结果</h2>
+                <div id="final-rankings">
+                    <!-- 最终排名将在这里显示 -->
+                </div>
+                <button onclick="restartGame()">重新开始</button>
+            </div>
+        </main>
+    </div>
+
+    <!-- 音效元素 -->
+    <div id="audio-container" style="display: none;">
+        <!-- 使用Web Audio API生成的音效，不需要外部文件 -->
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
